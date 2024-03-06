@@ -13,6 +13,6 @@
  */
 void createArucoMarker(int markerId = 23);
 
-int videoStreaming();
+int videoStreaming(std::string filename = "");
 
 #endif

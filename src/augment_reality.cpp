@@ -15,10 +15,10 @@ using namespace std;
  */
 void printUsage()
 {
-    cout << "Usage: ./augment_reality.exe [options]\n"
+    cout << "Usage: ./augment_reality.exe [options] (arguments)\n"
          << "Options:\n"
          << "  -c --calibration\tRun the calibration process\n"
-         << "  -a --aruco\t\tCreate new Aruco marker. (optional: pass in marker id. default is 23) \n"
+         << "  -a --aruco\t\tCreate new Aruco marker. (argument: pass in marker id. default is 23) \n"
          << "  -v --video\t\tInitiate video stream  \n"
          << "  -h or --help\t\tShow this help message\n"
          << endl;
@@ -60,7 +60,14 @@ int main(int argc, char *argv[])
         // Video command is passed
         else if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--video") == 0)
         {
-            return videoStreaming();
+            if (argc == 3)
+            {
+                return videoStreaming(argv[2]);
+            }
+            else
+            {
+                return videoStreaming();
+            }
         }
 
         // Help command is passed

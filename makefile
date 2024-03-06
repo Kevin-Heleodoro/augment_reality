@@ -8,9 +8,10 @@ CFLAGS = -Wc++11-extensions -std=c++11 -I./include -DENABLE_PRECOMPILED_HEADERS=
 # Dwarf include paths
 CXXFLAGS = $(CFLAGS)
 
-# opencv libraries
+# Opencv libraries
 LDLIBS = $(shell pkg-config --libs opencv4)
 
+# Directories
 BINDIR = ./bin
 SRCDIR = ./src
 OBJDIR = ./obj

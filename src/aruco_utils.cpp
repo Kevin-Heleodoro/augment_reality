@@ -7,6 +7,14 @@
 
 #include "aruco_utils.h"
 
+//--------------------- Global Variables ---------------------//
+std::vector<cv::Vec3f> point_set;
+std::vector<std::vector<cv::Vec3f>> point_list;
+std::vector<std::vector<cv::Point2f>> corner_list;
+
+cv::aruco::DetectorParameters detectorParams;
+//------------------------------------------------------------//
+
 /**
  * @brief Creates a new Aruco marker and saves it to a file
  *
@@ -25,24 +33,50 @@ void createArucoMarker(int markerId)
     cv::imwrite(filename, markerImage);
 }
 
-void detectAndDrawMarkers(cv::Mat &src)
+/**
+ * @brief Detects and draws Aruco markers in the video stream
+ *
+ * @param src The source image
+ * @param estimatePose Flag to estimate the pose of the markers
+ * @return void
+ */
+void detectAndDrawMarkers(cv::Mat &src, bool estimatePose = false)
 {
     std::vector<int> markerIds;
     std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
-    cv::aruco::DetectorParameters params = cv::aruco::DetectorParameters();
+    // cv::aruco::DetectorParameters params = cv::aruco::DetectorParameters();
     cv::aruco::Dictionary dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::aruco::ArucoDetector detector(dict, params);
+    cv::aruco::ArucoDetector detector(dict, detectorParams);
+    // cv::aruco::ArucoDetector detector(dict, params);
     detector.detectMarkers(src, markerCorners, markerIds, rejectedCandidates);
 
     if (markerIds.size() > 0)
     {
+        // if (estimatePose)
+        // {
+        //     size_t numMarkers = markerCorners.size();
+        //     std::vector<cv::Vec3d> rvecs(numMarkers), tvecs(numMarkers);
+        //     for (size_t i = 0; i < numMarkers; i++) {
+        //         cv::aruco::estimatePoseSingleMarkers(markerCorners[i], 0.05, cameraMatrix, distCoeffs, rvecs[i],
+        //         tvecs[i]);
+        //         // cv::aruco::drawAxis(src, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1);
+        //     }
+        // }
         std::cout << "Detected " << markerIds.size() << " markers" << std::endl;
         cv::aruco::drawDetectedMarkers(src, markerCorners, markerIds);
     }
 }
 
-int videoStreaming()
+void saveCalibrationImage(cv::Mat &src)
 {
+    std::string filename = "calibration_image.png";
+    cv::imwrite(filename, src);
+}
+
+int videoStreaming(std::string filename)
+{
+    bool estimateMarkerPose = true;
+
     cv::VideoCapture cap(0);
     if (!cap.isOpened())
     {
@@ -52,9 +86,11 @@ int videoStreaming()
 
     cv::namedWindow("Video Stream", cv::WINDOW_AUTOSIZE);
 
+    detectorParams = cv::aruco::DetectorParameters();
+
     while (true)
     {
-        cv::Mat frame;
+        cv::Mat frame, frameCopy;
         cap >> frame;
         if (frame.empty())
         {
@@ -62,9 +98,11 @@ int videoStreaming()
             break;
         }
 
-        detectAndDrawMarkers(frame);
+        frame.copyTo(frameCopy);
+        detectAndDrawMarkers(frameCopy, estimateMarkerPose);
+        // detectAndDrawMarkers(frameCopy);
 
-        cv::imshow("Video Stream", frame);
+        cv::imshow("Video Stream", frameCopy);
 
         char key = cv::waitKey(30);
         if (key == 'q' || key == 'Q')
@@ -75,7 +113,8 @@ int videoStreaming()
         if (key == 's' || key == 'S')
         {
             std::cout << "Saving frame" << std::endl;
-            imwrite("frame.png", frame);
+            saveCalibrationImage(frameCopy);
+            // imwrite("frame.png", frame);
         }
     }
 
