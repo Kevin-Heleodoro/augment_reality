@@ -16,10 +16,16 @@ For this task I decided to use the Aruco markers due to them being more stable a
 -   [ArUco Board](https://github.com/opencv/opencv/blob/4.x/doc/tutorials/objdetect/aruco_board_detection/images/board.png)
 -   [ChArUco Board](https://github.com/opencv/opencv/blob/4.x/doc/charuco_board_pattern.png)
 -   [OpenCV ArUco Board Detection](https://docs.opencv.org/4.x/db/da9/tutorial_aruco_board_detection.html)
+-   [OpenCV Camera Calibration](https://docs.opencv.org/4.x/d4/d94/tutorial_camera_calibration.html)
+-   [OpenCV ArUco Calibration](https://docs.opencv.org/4.x/da/d13/tutorial_aruco_calibration.html)
+-   [GitHub Camera Calibration](https://github.com/opencv/opencv/blob/4.x/samples/cpp/tutorial_code/calib3d/camera_calibration/camera_calibration.cpp)
+-   <!-- You can find a ChAruco board pattern in https://github.com/opencv/opencv/blob/4.x/doc/charuco_board_pattern.png (7X5 ChAruco board, square size: 30 mm , marker size: 15 mm, aruco dict: DICT_5X5_100, page width: 210 mm, page height: 297 mm) -->
 
 <!-- For task 2 OpenCV recommends using a ChArUco board for camera calibration as it is more precise than both the chessboard and ArUco boards. A benefit to using the ChArUco board is that it allows for occlusions and impartial views during camera calibration. --> The ChArUco board requires some refactoring of the code for it to work. Will come back to this later.
 
-Instead of passing in an image, the calibration targets will be captured by the live video stream at different angles. Each time the user hits 's', the image and the corners associated with it will be saved for calibration purposes.
+Instead of passing in an image, the calibration targets will be captured by the live video stream at different angles. Each time the user hits 's', the image will be saved in [/img/CameraCalibration].
+
+The corners associated with it will be calculated during the calibration. This is necessary for calibrating the camera to then estimate prose. I jumped the gun on this earlier and tried to estimate prose without having the camera calibration criteria met.
 
 <!-- -w=5 -h=7 -l=100 -s=10
 -v=/path_to_opencv/opencv/doc/tutorials/objdetect/aruco_board_detection/gboriginal.jpg

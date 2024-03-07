@@ -7,6 +7,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "../include/aruco_utils.h"
+#include "../include/camera_utils.h"
 
 using namespace std;
 
@@ -41,6 +42,15 @@ int main(int argc, char *argv[])
         if (strcmp(argv[1], "-c") == 0 || strcmp(argv[1], "--calibration") == 0)
         {
             cout << "Running calibration process..." << endl;
+            // if (argc == 3)
+            // {
+            //     return calibrateCamera(argv[2]);
+            // }
+            // else
+            // {
+            //     std::string defaultCalibrationDirectory = "../img/CameraCalibration";
+            //     return calibrateCamera(defaultCalibrationDirectory);
+            // }
         }
 
         // Aruco command is passed
@@ -66,7 +76,7 @@ int main(int argc, char *argv[])
             }
             else
             {
-                return videoStreaming();
+                return videoStreaming("");
             }
         }
 
