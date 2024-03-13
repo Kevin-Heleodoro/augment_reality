@@ -27,10 +27,337 @@ Instead of passing in an image, the calibration targets will be captured by the 
 
 The corners associated with it will be calculated during the calibration. This is necessary for calibrating the camera to then estimate prose. I jumped the gun on this earlier and tried to estimate prose without having the camera calibration criteria met.
 
-<!-- -w=5 -h=7 -l=100 -s=10
+Aruco markers being used have a size of 6x6
+
+<!-- -w=5 -h=7 -l=100 -s=10 -d=10
 -v=/path_to_opencv/opencv/doc/tutorials/objdetect/aruco_board_detection/gboriginal.jpg
 -c=/path_to_opencv/opencv/samples/cpp/tutorial_code/objectDetection/tutorial_camera_params.yml
 -cd=/path_to_opencv/opencv/samples/cpp/tutorial_code/objectDetection/tutorial_dict.yml -->
+
+## Task 3
+
+Camera calibration. I was collecting the corners incorrectly at first and not initializing the point set the right way. Originally, I was reinitializing the point set everytime we were trying to save a calibration image. This was incorrect because it wasn't providing a consistent base to compare the target corners to. I also was pushing only the first corner instead of all corners detected into the corner set at first.
+
+_I was getting error messages during the camera calibration due to an assertion between the object points and the image points. I tried retaking the calibration images without flipping the board completely upside down and instead just taking screenshots at different angles and distances with the first corner maintaining its relative position when compared to the other corners._
+
+```sh
+Point Set Size: 140
+Initial Camera Matrix: [1, 0, 0;
+0, 1, 0;
+0, 0, 1]
+Saving frame
+Calibration image saved
+Marker Corners vs point_set:
+Marker Corners: 35
+Point Set: 140
+Number of calibration images: 1
+Number of corners: 1
+Number of points: 1
+Number of point sets: 140
+
+Saving frame
+Calibration image saved
+Marker Corners vs point_set:
+Marker Corners: 35
+Point Set: 140
+Number of calibration images: 2
+Number of corners: 2
+Number of points: 2
+Number of point sets: 140
+
+Saving frame
+Calibration image saved
+Marker Corners vs point_set:
+Marker Corners: 35
+Point Set: 140
+Number of calibration images: 3
+Number of corners: 3
+Number of points: 3
+Number of point sets: 140
+
+Saving frame
+Calibration image saved
+Marker Corners vs point_set:
+Marker Corners: 35
+Point Set: 140
+Number of calibration images: 4
+Number of corners: 4
+Number of points: 4
+Number of point sets: 140
+
+Saving frame
+Calibration image saved
+Marker Corners vs point_set:
+Marker Corners: 35
+Point Set: 140
+Number of calibration images: 5
+Number of corners: 5
+Number of points: 5
+Number of point sets: 140
+
+Saving frame
+Calibration image saved
+Marker Corners vs point_set:
+Marker Corners: 35
+Point Set: 140
+Number of calibration images: 6
+Number of corners: 6
+Number of points: 6
+Number of point sets: 140
+
+Calibrating camera
+Parameters passed to camera calibration function:
+Camera Matrix:
+[1, 0, 0;
+0, 1, 0;
+0, 0, 1]
+Distortion Coefficients: []
+Image Size: [1280 x 720]
+Point List Size: 6
+Corner List Size: 6
+Results from the calibration:
+RMS: 144.114
+Camera Matrix:
+[151.6203986185967, 0, 539.488481643926;
+0, 151.6203986185967, 332.1966861865517;
+0, 0, 1]
+Distortion Coefficients: [-0.01876109472949826, 0.0001439978612589976, 0.003788645099711373, 0.007662638459728349, -3.239925154500674e-07]
+Rvecs: 6
+Tvecs: 6
+```
+
+The images used for the above calibration are in [img/task_3](img/task_3)
+
+---
+
+Recreated the Aruco board instead of using the one provided by the documentation so that I would know the exact parameters that went into it.
+
+Results from first calibration:
+
+```sh
+Calibrating camera
+Parameters passed to camera calibration function:
+Camera Matrix:
+ [1, 0, 0;
+ 0, 1, 0;
+ 0, 0, 1]
+Distortion Coefficients: [0;
+ 0;
+ 0;
+ 0;
+ 0;
+ 0;
+ 0;
+ 0]
+Image Size: [1280 x 720]
+Point List Size: 7
+Corner List Size: 7
+
+Results from the calibration:
+Reprojection Error: 178.239
+Camera Matrix:
+ [205.5928395558909, 0, 639.645517284077;
+ 0, 205.5928395558909, 359.4054592449027;
+ 0, 0, 1]
+Distortion Coefficients: [-0.05173143613094228;
+ 0.0006325430701229498;
+ 0.005765094464291955;
+ -0.01825402569281661;
+ -2.566613254766876e-06]
+Focal Length 'fx': 205.593
+Focal Length 'fy': 205.593
+Principal Point 'u0': 639.646
+Principal Point 'v0': 359.405
+Rvecs: 7
+Tvecs: 7
+
+```
+
+I modified the focal length in the initial camera matrix to be `frame.cols` instead of `1`. I also reduced the size of the dis coefficients from 8 to 5. FAILED
+
+```sh
+Calibrating camera
+Parameters passed to camera calibration function:
+Camera Matrix:
+ [0, 0, 0;
+ 0, 0, 0;
+ 0, 0, 1]
+Distortion Coefficients: [0;
+ 0;
+ 0;
+ 0;
+ 0]
+Image Size: [1280 x 720]
+Point List Size: 6
+Corner List Size: 6
+
+Results from the calibration:
+Reprojection Error: nan
+Camera Matrix:
+ [nan, 0, nan;
+ 0, nan, nan;
+ 0, 0, 1]
+Distortion Coefficients: [nan;
+ nan;
+ nan;
+ nan;
+ nan]
+Focal Length 'fx': nan
+Focal Length 'fy': nan
+Principal Point 'u0': nan
+Principal Point 'v0': nan
+Rvecs: 6
+Tvecs: 6
+```
+
+Moved the variable initialization to be performed after the first frame is captured.
+
+```sh
+Calibrating camera
+Parameters passed to camera calibration function:
+Camera Matrix:
+ [1280, 0, 640;
+ 0, 1280, 360;
+ 0, 0, 1]
+Distortion Coefficients: [0;
+ 0;
+ 0;
+ 0;
+ 0]
+Image Size: [1280 x 720]
+Point List Size: 6
+Corner List Size: 6
+
+Results from the calibration:
+Reprojection Error: 123.633
+Camera Matrix:
+ [284.4113855971449, 0, 657.2708650288573;
+ 0, 284.4113855971449, 370.7546299768721;
+ 0, 0, 1]
+Distortion Coefficients: [-0.08475806270843005;
+ 0.001977968335649451;
+ -0.003275799228120908;
+ 0.00200010039964631;
+ -1.323922445895045e-05]
+Focal Length 'fx': 284.411
+Focal Length 'fy': 284.411
+Principal Point 'u0': 657.271
+Principal Point 'v0': 370.755
+Rvecs: 6
+Tvecs: 6
+```
+
+Changed the focal length back to `1` instead of `frame.cols`.
+
+```sh
+Calibrating camera
+Parameters passed to camera calibration function:
+Camera Matrix:
+ [1, 0, 640;
+ 0, 1, 360;
+ 0, 0, 1]
+Distortion Coefficients: [0;
+ 0;
+ 0;
+ 0;
+ 0]
+Image Size: [1280 x 720]
+Point List Size: 5
+Corner List Size: 5
+
+Results from the calibration:
+Reprojection Error: 99.9029
+Camera Matrix:
+ [261.0213652763136, 0, 628.9575005366416;
+ 0, 261.0213652763136, 362.9115271523518;
+ 0, 0, 1]
+Distortion Coefficients: [-0.07778671729709283;
+ 0.001770995222786093;
+ -0.0001349355051383821;
+ 0.002289855454145317;
+ -1.211794839677911e-05]
+Focal Length 'fx': 261.021
+Focal Length 'fy': 261.021
+Principal Point 'u0': 628.958
+Principal Point 'v0': 362.912
+Rvecs: 5
+Tvecs: 5
+```
+
+Slightly modified how I am creating the point set. For 35 markers I should be getting a point set of size 140. Cannot seem to get the RMS value down under 99.
+
+Removed the `CV::CALIB_FIX_ASPECT_RATIO` flag and made the error even higher.
+
+```sh
+Results from the calibration:
+Reprojection Error: 265.157
+Camera Matrix:
+ [162.1560797922828, 0, 639.5053125972486;
+ 0, 448.3844115004588, 359.5031117328392;
+ 0, 0, 1]
+Distortion Coefficients: [-0.03936041932382128;
+ 0.0003920274411193862;
+ 0.002640720418946475;
+ -0.007073264020485122;
+ -1.129373138457779e-06]
+Focal Length 'fx': 162.156
+Focal Length 'fy': 448.384
+Principal Point 'u0': 639.505
+Principal Point 'v0': 359.503
+```
+
+Replaced the `CV::CALIB_FIX_ASPECT_RATIO` flag in calibrateCamera. Reduced focal length to `frame.cols * 1.2` from `1.5`.
+
+-   Reprojection Error: 136.751
+
+Reduced focal length to `frame.cols`.
+
+-   Reprojection Error: 128.081
+-
+
+Took another look at how I was generating the aruco board. After doing the manual calculations I realized that I was generating the wrong size board for calibration. I had boardSize set to `Size(500, 600)` and it needed to be set to `Size(560, 780)`. This is based on the parameters:
+
+-   marker length = 100px
+-   marker separation = 10px
+-   marker margins = 10px
+-   board width = 5
+-   board height = 7
+
+After those changes still getting a reprojection error of 201.23. Attempting to pass in the boardSize to calibrateCamera instead of the frameSize to see what happens.
+
+```sh
+Parameters passed to camera calibration function:
+Camera Matrix:
+ [1280, 0, 640;
+ 0, 1280, 360;
+ 0, 0, 1]
+Distortion Coefficients: [0;
+ 0;
+ 0;
+ 0;
+ 0]
+Image Size: [560 x 780]
+Point List Size: 6
+Corner List Size: 6
+
+Results from the calibration:
+Reprojection Error: 176.669
+Camera Matrix:
+ [74.25199464387669, 0, 279.5239947387621;
+ 0, 74.25199464387669, 389.4628797896039;
+ 0, 0, 1]
+Distortion Coefficients: [-0.04368640609923428;
+ 0.0005379097216165003;
+ 0.00533784868539272;
+ 0.02074461983933977;
+ -1.845885817082606e-06]
+Focal Length 'fx': 74.252
+Focal Length 'fy': 74.252
+Principal Point 'u0': 279.524
+Principal Point 'v0': 389.463
+Rvecs: 6
+Tvecs: 6
+```
 
 ## Resources
 

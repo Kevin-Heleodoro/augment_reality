@@ -7,6 +7,9 @@
 #ifndef CAMERA_UTILS_H
 #define CAMERA_UTILS_H
 
-int calibrateCamera(std::string calibrationDirectory);
+// int calibrateCamera(std::string calibrationDirectory);
+
+double calibrateCamera(cv::Mat &cameraMatrix, cv::Mat &distCoeffs, cv::Size &imageSize,
+                    std::vector<std::vector<cv::Vec3f>> point_list, std::vector<std::vector<cv::Point2f>> corner_list);
 
 #endif

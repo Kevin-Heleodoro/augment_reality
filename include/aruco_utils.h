@@ -15,4 +15,6 @@ void createArucoMarker(int markerId = 23);
 
 int videoStreaming(std::string filename = "");
 
+void createArucoBoard();
+
 #endif

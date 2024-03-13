@@ -18,8 +18,7 @@ void printUsage()
 {
     cout << "Usage: ./augment_reality.exe [options] (arguments)\n"
          << "Options:\n"
-         << "  -c --calibration\tRun the calibration process\n"
-         << "  -a --aruco\t\tCreate new Aruco marker. (argument: pass in marker id. default is 23) \n"
+         << "  -a --aruco\t\tCreate new Aruco board \n"
          << "  -v --video\t\tInitiate video stream  \n"
          << "  -h or --help\t\tShow this help message\n"
          << endl;
@@ -38,33 +37,10 @@ int main(int argc, char *argv[])
     // Check for command line arguments
     if (argc >= 2)
     {
-        // Calibration command is passed
-        if (strcmp(argv[1], "-c") == 0 || strcmp(argv[1], "--calibration") == 0)
-        {
-            cout << "Running calibration process..." << endl;
-            // if (argc == 3)
-            // {
-            //     return calibrateCamera(argv[2]);
-            // }
-            // else
-            // {
-            //     std::string defaultCalibrationDirectory = "../img/CameraCalibration";
-            //     return calibrateCamera(defaultCalibrationDirectory);
-            // }
-        }
-
         // Aruco command is passed
-        else if (strcmp(argv[1], "-a") == 0 || strcmp(argv[1], "--aruco") == 0)
+        if (strcmp(argv[1], "-a") == 0 || strcmp(argv[1], "--aruco") == 0)
         {
-            // Create new ArUco marker
-            if (argc == 3)
-            {
-                createArucoMarker(atoi(argv[2]));
-            }
-            else
-            {
-                createArucoMarker();
-            }
+            createArucoBoard();
         }
 
         // Video command is passed
