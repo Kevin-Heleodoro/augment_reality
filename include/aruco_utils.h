@@ -13,7 +13,7 @@
  */
 void createArucoMarker(int markerId = 23);
 
-int videoStreaming(std::string filename = "");
+int videoStreaming(std::string cameraCalibrationFile = "");
 
 void createArucoBoard();
 

@@ -359,7 +359,84 @@ Rvecs: 6
 Tvecs: 6
 ```
 
+Comparing passing in image Size vs boardsize
+
+ImageSize:
+
+```sh
+Parameters passed to camera calibration function:
+Camera Matrix:
+ [1280, 0, 640;
+ 0, 1280, 360;
+ 0, 0, 1]
+Distortion Coefficients: [0;
+ 0;
+ 0;
+ 0;
+ 0]
+Image Size: [1280 x 720]
+Point List Size: 7
+Corner List Size: 7
+
+Results from the calibration:
+Reprojection Error: 206.988
+Camera Matrix:
+ [282.2086175759212, 0, 639.4057031884823;
+ 0, 282.2086175759212, 359.4645022646836;
+ 0, 0, 1]
+Distortion Coefficients: [-0.07477086573832603;
+ 0.001372020961362885;
+ -0.0002137502827226283;
+ -0.01273869310786715;
+ -7.108247689467206e-06]
+Focal Length 'fx': 282.209
+Focal Length 'fy': 282.209
+Principal Point 'u0': 639.406
+Principal Point 'v0': 359.465
+Rvecs: 7
+Tvecs: 7
+```
+
+BoardSize:
+
+```sh
+Parameters passed to camera calibration function:
+Camera Matrix:
+ \[1280, 0, 640;
+ 0, 1280, 360;
+ 0, 0, 1\]
+Distortion Coefficients: \[0;
+ 0;
+ 0;
+ 0;
+ 0\]
+Image Size: \[560 x 780\]
+Point List Size: 5
+Corner List Size: 5
+
+Results from the calibration:
+Reprojection Error: 267.547
+Camera Matrix:
+ \[178.0067807971627, 0, 279.5000035065655;
+ 0, 178.0067807971627, 389.4999923878752;
+ 0, 0, 1\]
+Distortion Coefficients: \[-0.02147757239973928;
+ 0.0001120867974737845;
+ 0.00232019426490443;
+ 0.004844222834624031;
+ -1.497465842035556e-07\]
+Focal Length 'fx': 178.007
+Focal Length 'fy': 178.007
+Principal Point 'u0': 279.5
+Principal Point 'v0': 389.5
+Rvecs: 5
+Tvecs: 5
+```
+
+Does the order of marker Ids matter? What about the size?
+
 ## Resources
 
 -   [Parsing program options](https://medium.com/@mostsignificant/3-ways-to-parse-command-line-arguments-in-c-quick-do-it-yourself-or-comprehensive-36913284460f)
 -   [OpenCV GitHub Repo](https://github.com/opencv/opencv/tree/4.x/samples)
+-   [OpenCV Aruco github directories](https://github.com/opencv/opencv/tree/4.x/modules/objdetect/src/aruco)

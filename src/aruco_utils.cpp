@@ -15,21 +15,27 @@ cv::aruco::Dictionary dict;
 cv::Mat cameraMatrix, distCoeffs, frame, frameCopy;
 cv::Size imageSize;
 std::vector<int> markerIds;
+std::vector<int> markerCounterPerFrame;
 std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
+cv::Ptr<cv::aruco::Board> arucoBoard;
 
 // Future Goal: Create a class or struct to store the following variables
 std::vector<cv::Vec3f> point_set;                  // should equal markerCorners // object points
 std::vector<std::vector<cv::Vec3f>> point_list;    // should be the same size as corner_list
 std::vector<std::vector<cv::Point2f>> corner_list; // image points
 std::vector<cv::Mat> calibrationImages;
+std::vector<cv::Mat> tvecs, rvecs;
 int numOfCalibrationImages;
 float squareSize, markerSize, aspectRatio;
+// int markersX = 7;
 int markersX = 5;
 int markersY = 7;
+// int markersY = 5;
 int margins = 10;
 int borderBits = 1;
 int markerLength = 100;
 int markerSeparation = 10;
+// cv::Size boardSize = cv::Size(780, 560);
 cv::Size boardSize = cv::Size(560, 780);
 bool isCalibrated = false;
 bool areVariablesInitialized = false;
@@ -93,31 +99,56 @@ void createArucoBoard()
  * @param estimatePose Flag to estimate the pose of the markers
  * @return void
  */
-void detectAndDrawMarkers(cv::Mat &src, bool estimatePose = false)
+void detectAndDrawMarkers(cv::Mat &src, bool estimatePose = false, bool showRejected = false)
 {
+    cv::aruco::GridBoard board =
+        cv::aruco::GridBoard(cv::Size(markersX, markersY), markerLength, markerSeparation, dict);
+
+    cv::Ptr<cv::aruco::Board> arucoBoard = cv::makePtr<cv::aruco::Board>(board);
+
     cv::aruco::ArucoDetector detector(dict, detectorParams);
     detector.detectMarkers(src, markerCorners, markerIds, rejectedCandidates);
+
+    int markersDetected = 0;
+    // if (!markerIds.empty())
+    // {
+    //     cv::Mat objPoints, imgPoints;
+    //     board.matchImagePoints(markerCorners, markerIds, objPoints, imgPoints);
+    //     cv::solvePnP(objPoints, imgPoints, cameraMatrix, distCoeffs, rvecs, tvecs);
+    //     markersDetected = (int)objPoints.total() / 4;
+    //     cv::aruco::estimatePoseSingleMarkers(markerCorners, markerLength, cameraMatrix, distCoeffs, rvecs, tvecs);
+    //     // for (int i = 0; i < markerIds.size(); i++)
+    //     // {
+    //     //     cv::aruco::drawAxis(src, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 0.5f);
+    //     // }
+    // }
 
     if (markerIds.size() > 0)
     {
         cv::aruco::drawDetectedMarkers(src, markerCorners, markerIds);
     }
+
+    if (showRejected && !rejectedCandidates.empty())
+    {
+        cv::aruco::drawDetectedMarkers(src, rejectedCandidates, cv::noArray(), cv::Scalar(100, 0, 255));
+    }
+
+    // if (estimatePose)
+    // {
+    //     cv::drawFrameAxes(src, cameraMatrix, distCoeffs, rvecs, tvecs, markerLength * 0.5f);
+    // }
 }
 
 void printCalibrationVariables()
 {
-    std::cout << "Printing point set: " << std::endl;
-    for (size_t i = 0; i < point_set.size(); i++)
-    {
-        std::cout << "Point " << i << ": " << std::endl;
-        std::cout << point_set[i] << std::endl;
-    }
-
-    std::cout << "Printing corner list: " << std::endl;
+    // Iterating over corner_list and comparing each corner to the point_set
     for (size_t i = 0; i < corner_list.size(); i++)
     {
-        std::cout << "Corner " << i << ": " << std::endl;
-        std::cout << corner_list[i] << std::endl;
+        for (size_t j = 0; j < corner_list[i].size(); j++)
+        {
+            std::cout << "Corner " << i + 1 << ": " << corner_list[i][j] << std::endl;
+            std::cout << "Point " << i + 1 << ": " << point_set[j] << std::endl;
+        }
     }
 }
 
@@ -133,6 +164,7 @@ void saveCalibrationVariables(double reprojectionError = 0.0)
     fs << "reprojection_error" << reprojectionError;
     fs << "point_set" << point_set;
     fs << "corner_list" << corner_list;
+    fs << "marker_corners" << markerCorners;
     fs.release();
 }
 
@@ -157,15 +189,14 @@ void saveCalibrationImage(cv::Mat &src, std::string calibrationDirectory = defau
     {
         for (size_t j = 0; j < markerCorners[i].size(); j++)
         {
-            corners.push_back(markerCorners[i][j]);
-            std::cout << "i: " << i << "j: " << j << std::endl;
-            std::cout << "Marker Corner: " << markerCorners[i][j] << std::endl;
+            cv::Point2f point(markerCorners[i][j].x, markerCorners[i][j].y);
+            corners.push_back(point);
+            // corners.push_back(markerCorners[i][j]);
+            std::cout << "Marker ID: " << markerIds[i] << std::endl;
+            // std::cout << "Marker Corner: " << markerCorners[i][j] << std::endl;
+            std::cout << "Corner: " << point << std::endl;
         }
     }
-
-    // std::cout << "First corner: " << corners[0] << std::endl;
-    // std::cout << "First point set: " << point_set[0] << std::endl;
-    // printCalibrationVariables();
 
     if (corners.size() != point_set.size())
     {
@@ -175,6 +206,7 @@ void saveCalibrationImage(cv::Mat &src, std::string calibrationDirectory = defau
 
     corner_list.push_back(corners);
     point_list.push_back(point_set);
+    markerCounterPerFrame.push_back((int)markerIds.size());
 
     std::string filename = calibrationDirectory + std::to_string(numOfCalibrationImages) + "_calibration_image.png";
     cv::imwrite(filename, src);
@@ -183,11 +215,12 @@ void saveCalibrationImage(cv::Mat &src, std::string calibrationDirectory = defau
     calibrationImages.push_back(src);
 
     std::cout << "Number of calibration images: " << numOfCalibrationImages << std::endl;
-    std::cout << "Number of corners: " << corner_list.size() << std::endl;
+    std::cout << "Number of corner sets: " << corner_list.size() << std::endl;
+    std::cout << "Number of corners in last set: " << corner_list[corner_list.size() - 1].size() << std::endl;
     std::cout << "Number of points: " << point_list.size() << std::endl;
     std::cout << "\n" << std::endl;
 
-    printCalibrationVariables();
+    // printCalibrationVariables();
 }
 
 /**
@@ -218,13 +251,13 @@ void initializeVariables()
      * [0, 0, 1           ]
      */
     cameraMatrix = cv::Mat::eye(3, 3, CV_64FC1);
-    cameraMatrix.at<double>(0, 0) = focalLength * aspectRatio;
-    // cameraMatrix.at<double>(0, 0) = 1;
+    // cameraMatrix.at<double>(0, 0) = focalLength * aspectRatio;
+    cameraMatrix.at<double>(0, 0) = 1;
     cameraMatrix.at<double>(0, 1) = 0;
     cameraMatrix.at<double>(0, 2) = frame.cols / 2.0;
     cameraMatrix.at<double>(1, 0) = 0;
-    cameraMatrix.at<double>(1, 1) = focalLength;
-    // cameraMatrix.at<double>(1, 1) = 1;
+    // cameraMatrix.at<double>(1, 1) = focalLength;
+    cameraMatrix.at<double>(1, 1) = 1;
     cameraMatrix.at<double>(1, 2) = frame.rows / 2.0;
     cameraMatrix.at<double>(2, 0) = 0;
     cameraMatrix.at<double>(2, 1) = 0;
@@ -240,35 +273,25 @@ void initializeVariables()
         {
             x = j * (markerLength + markerSeparation);
             y = i * (markerLength + markerSeparation);
-            point_set.push_back(cv::Vec3f(x, y, 0));
-            point_set.push_back(cv::Vec3f(x + markerLength, y, 0));
-            point_set.push_back(cv::Vec3f(x + markerLength, y + markerLength, 0));
-            point_set.push_back(cv::Vec3f(x, y + markerLength, 0));
+            point_set.push_back(cv::Vec3f(y, x, 0));
+            point_set.push_back(cv::Vec3f(y + markerLength, x, 0));
+            point_set.push_back(cv::Vec3f(y + markerLength, x + markerLength, 0));
+            point_set.push_back(cv::Vec3f(y, x + markerLength, 0));
+            // point_set.push_back(cv::Vec3f(x, y, 0));
+            // point_set.push_back(cv::Vec3f(x + markerLength, y, 0));
+            // point_set.push_back(cv::Vec3f(x + markerLength, y + markerLength, 0));
+            // point_set.push_back(cv::Vec3f(x, y + markerLength, 0));
         }
     }
 
-    // float xStart, yStart = 0.0f;
-    // for (int y = 0; y < markersY; y++)
-    // {
-    //     for (int x = 0; x < markersX; x++)
-    //     {
-    //         float xPos = xStart + x * (markerLength + markerSeparation);
-    //         float yPos = yStart + y * (markerLength + markerSeparation);
-
-    //         point_set.push_back(cv::Vec3f(xPos, yPos, 0));
-    //         point_set.push_back(cv::Vec3f(xPos + markerLength, yPos, 0));
-    //         point_set.push_back(cv::Vec3f(xPos + markerLength, yPos + markerLength, 0));
-    //         point_set.push_back(cv::Vec3f(xPos, yPos + markerLength, 0));
-    //     }
-    // }
-
     std::cout << "Point Set Size: " << point_set.size() << std::endl;
+    std::cout << "Camera Matrix" << cameraMatrix << std::endl;
 
     areVariablesInitialized = true;
     std::cout << "Variables initialized! \n" << std::endl;
 }
 
-int videoStreaming(std::string calibrationDirectory)
+int videoStreaming(std::string cameraCalibrationFile)
 {
     cv::VideoCapture cap(0);
     if (!cap.isOpened())
@@ -277,15 +300,20 @@ int videoStreaming(std::string calibrationDirectory)
         return -1;
     }
 
+    if (cameraCalibrationFile != "")
+    {
+        readCameraParameters(cameraMatrix, distCoeffs, cameraCalibrationFile);
+        isCalibrated = true;
+    }
+
     std::cout << "\nWelcome to the Augmented Reality Application\n" << std::endl;
     std::cout << "Press 'q' to quit the program" << std::endl;
     std::cout << "Press 's' to save a calibration image" << std::endl;
     std::cout << "Press 'c' to calibrate the camera" << std::endl;
     std::cout << "\n" << std::endl;
 
-    calibrationDirectory = calibrationDirectory == "" ? defaultCalibrationDirectory : calibrationDirectory;
+    // calibrationDirectory = calibrationDirectory == "" ? defaultCalibrationDirectory : calibrationDirectory;
     cv::namedWindow("Video Stream", cv::WINDOW_AUTOSIZE);
-    // initializeVariables();
 
     std::cout << "Initial Camera Matrix: " << cameraMatrix << std::endl;
 
@@ -302,6 +330,9 @@ int videoStreaming(std::string calibrationDirectory)
         {
             initializeVariables();
         }
+
+        // flip image vertically
+        // cv::flip(frame, frame, 1);
 
         frame.copyTo(frameCopy);
         imageSize = frame.size();
@@ -322,8 +353,7 @@ int videoStreaming(std::string calibrationDirectory)
         if (key == 's' || key == 'S')
         {
             std::cout << "Saving frame" << std::endl;
-            saveCalibrationImage(frameCopy, calibrationDirectory);
-            // saveCalibrationImage(frame, calibrationDirectory);
+            saveCalibrationImage(frameCopy, defaultCalibrationDirectory);
             cv::waitKey(500);
         }
         if (key == 'c' || key == 'C')
@@ -332,8 +362,11 @@ int videoStreaming(std::string calibrationDirectory)
             if (numOfCalibrationImages >= 5)
             {
                 // TODO: Make sure that this calibration call allows the video loop to continue
-                double result = calibrateCamera(cameraMatrix, distCoeffs, boardSize, point_list, corner_list);
-                // double result = calibrateCamera(cameraMatrix, distCoeffs, imageSize, point_list, corner_list);
+                // double result = calibrateCamera(cameraMatrix, distCoeffs, boardSize, point_list, corner_list);
+                double result = calibrateCamera(cameraMatrix, distCoeffs, imageSize, point_list, corner_list, rvecs,
+                                                tvecs, markerIds, markerCounterPerFrame, arucoBoard);
+                // double result = calibrateCamera(cameraMatrix, distCoeffs, imageSize, point_list, corner_list, rvecs,
+                //                                 tvecs);
                 saveCalibrationVariables(result);
 
                 if (result > 0)
@@ -345,7 +378,6 @@ int videoStreaming(std::string calibrationDirectory)
                 {
                     std::cout << "Camera calibration failed" << std::endl;
                 }
-                // continue;
             }
             else
             {

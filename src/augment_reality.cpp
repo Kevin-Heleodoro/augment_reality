@@ -48,7 +48,8 @@ int main(int argc, char *argv[])
         {
             if (argc == 3)
             {
-                return videoStreaming(argv[2]);
+                std::string calibrationFileName = argv[2];
+                return videoStreaming(calibrationFileName);
             }
             else
             {
