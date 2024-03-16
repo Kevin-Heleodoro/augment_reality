@@ -24,6 +24,9 @@ double calibrateCamera(cv::Mat &cameraMatrix, cv::Mat &distCoeffs, cv::Size &ima
     std::cout << "Image Size: " << imageSize << std::endl;
     std::cout << "Point List Size: " << point_list.size() << std::endl;
     std::cout << "Corner List Size: " << corner_list.size() << std::endl;
+    std::cout << "Marker Ids Size: " << markerIds.size() << std::endl;
+    std::cout << "Marker Counter Per Frame Size: " << markerCounterPerFrame.size() << std::endl;
+    std::cout << "Board: " << board << std::endl;
 
     // std::vector<cv::Mat> rvecs, tvecs;
     std::vector<float> reprojectionErrors;

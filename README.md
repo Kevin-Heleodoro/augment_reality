@@ -435,8 +435,32 @@ Tvecs: 5
 
 Does the order of marker Ids matter? What about the size?
 
+### Chessboard
+
+Calibration using chessboard was much more successful. Here are the results of the first calibration attempt.
+
+```sh
+Calibrating camera
+Values pre-calibration:
+Camera Matrix:
+ [1, 0, 0;
+ 0, 1, 0;
+ 0, 0, 1]
+Distortion Coefficients: 0 0 0 0 0
+Values post-calibration:
+Reprojection Error: 2.43454
+Camera Matrix:
+ [1232.5972, 0, 639.5;
+ 0, 1232.5972, 359.5;
+ 0, 0, 1]
+Distortion Coefficients: 0.0512141 0.993731 0 0 0
+Rotation Vectors: 7
+Translation Vectors: 7
+```
+
 ## Resources
 
 -   [Parsing program options](https://medium.com/@mostsignificant/3-ways-to-parse-command-line-arguments-in-c-quick-do-it-yourself-or-comprehensive-36913284460f)
 -   [OpenCV GitHub Repo](https://github.com/opencv/opencv/tree/4.x/samples)
 -   [OpenCV Aruco github directories](https://github.com/opencv/opencv/tree/4.x/modules/objdetect/src/aruco)
+-   [Youtube video on camera calibration](https://www.youtube.com/watch?v=E5kHUs4npX4&list=PLkmvobsnE0GHMmTF7GTzJnCISue1L9fJn&index=13)

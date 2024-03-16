@@ -14,8 +14,8 @@ cv::aruco::DetectorParameters detectorParams;
 cv::aruco::Dictionary dict;
 cv::Mat cameraMatrix, distCoeffs, frame, frameCopy;
 cv::Size imageSize;
-std::vector<int> markerIds;
-std::vector<int> markerCounterPerFrame;
+std::vector<int> markerIds, markerIdsCopy, markerCounterPerFrame;
+// std::vector<int> markerCounterPerFrame;
 std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
 cv::Ptr<cv::aruco::Board> arucoBoard;
 
@@ -26,15 +26,17 @@ std::vector<std::vector<cv::Point2f>> corner_list; // image points
 std::vector<cv::Mat> calibrationImages;
 std::vector<cv::Mat> tvecs, rvecs;
 int numOfCalibrationImages;
-float squareSize, markerSize, aspectRatio;
+float markerSize, aspectRatio;
 // int markersX = 7;
 int markersX = 5;
 int markersY = 7;
 // int markersY = 5;
 int margins = 10;
 int borderBits = 1;
-int markerLength = 100;
+int markerLength = 10;
+// int markerLength = 100;
 int markerSeparation = 10;
+// int markerSeparation = 10;
 // cv::Size boardSize = cv::Size(780, 560);
 cv::Size boardSize = cv::Size(560, 780);
 bool isCalibrated = false;
@@ -104,7 +106,12 @@ void detectAndDrawMarkers(cv::Mat &src, bool estimatePose = false, bool showReje
     cv::aruco::GridBoard board =
         cv::aruco::GridBoard(cv::Size(markersX, markersY), markerLength, markerSeparation, dict);
 
-    cv::Ptr<cv::aruco::Board> arucoBoard = cv::makePtr<cv::aruco::Board>(board);
+    arucoBoard = cv::makePtr<cv::aruco::Board>(board);
+    // std::cout << "Aruco Board: " << board << std::endl;
+    // std::cout << "Marker Size: " << board.getMarkerLength() << std::endl;
+    // std::cout << "Marker Separation: " << board.getMarkerSeparation() << std::endl;
+    // std::cout << "Number of markers: " << board.getGridSize().area() << std::endl;
+    // std::cout << "Board Size: " << board.getObjPoints() << std::endl;
 
     cv::aruco::ArucoDetector detector(dict, detectorParams);
     detector.detectMarkers(src, markerCorners, markerIds, rejectedCandidates);
@@ -192,9 +199,9 @@ void saveCalibrationImage(cv::Mat &src, std::string calibrationDirectory = defau
             cv::Point2f point(markerCorners[i][j].x, markerCorners[i][j].y);
             corners.push_back(point);
             // corners.push_back(markerCorners[i][j]);
-            std::cout << "Marker ID: " << markerIds[i] << std::endl;
+            // std::cout << "Marker ID: " << markerIds[i] << std::endl;
             // std::cout << "Marker Corner: " << markerCorners[i][j] << std::endl;
-            std::cout << "Corner: " << point << std::endl;
+            // std::cout << "Corner: " << point << std::endl;
         }
     }
 
@@ -205,8 +212,12 @@ void saveCalibrationImage(cv::Mat &src, std::string calibrationDirectory = defau
     }
 
     corner_list.push_back(corners);
+    // cv::aruco::GridBoard board =
+    //     cv::aruco::GridBoard(cv::Size(markersX, markersY), markerLength, markerSeparation, dict);
+    // std::cout << "Object Points: " << board.getObjPoints()[0] << std::endl;
     point_list.push_back(point_set);
     markerCounterPerFrame.push_back((int)markerIds.size());
+    markerIdsCopy = markerIds;
 
     std::string filename = calibrationDirectory + std::to_string(numOfCalibrationImages) + "_calibration_image.png";
     cv::imwrite(filename, src);
@@ -218,6 +229,15 @@ void saveCalibrationImage(cv::Mat &src, std::string calibrationDirectory = defau
     std::cout << "Number of corner sets: " << corner_list.size() << std::endl;
     std::cout << "Number of corners in last set: " << corner_list[corner_list.size() - 1].size() << std::endl;
     std::cout << "Number of points: " << point_list.size() << std::endl;
+    std::cout << "Number of points in last set: " << point_list[point_list.size() - 1].size() << std::endl;
+    std::cout << "Number of marker ids: " << markerIds.size() << std::endl;
+    std::cout << "Number of marker ids in last set: " << markerCounterPerFrame[markerCounterPerFrame.size() - 1]
+              << std::endl;
+    std::cout << "Number of marker corners: " << markerCorners.size() << std::endl;
+    std::cout << "Number of marker corners in last set: " << markerCorners[markerCorners.size() - 1].size()
+              << std::endl;
+    std::cout << "Number of rejected candidates: " << rejectedCandidates.size() << std::endl;
+
     std::cout << "\n" << std::endl;
 
     // printCalibrationVariables();
@@ -362,9 +382,11 @@ int videoStreaming(std::string cameraCalibrationFile)
             if (numOfCalibrationImages >= 5)
             {
                 // TODO: Make sure that this calibration call allows the video loop to continue
+                std::cout << "User began calibration" << std::endl;
+                arucoBoard->matchImagePoints(markerCorners, markerIds, point_set, corner_list);
                 // double result = calibrateCamera(cameraMatrix, distCoeffs, boardSize, point_list, corner_list);
                 double result = calibrateCamera(cameraMatrix, distCoeffs, imageSize, point_list, corner_list, rvecs,
-                                                tvecs, markerIds, markerCounterPerFrame, arucoBoard);
+                                                tvecs, markerIdsCopy, markerCounterPerFrame, arucoBoard);
                 // double result = calibrateCamera(cameraMatrix, distCoeffs, imageSize, point_list, corner_list, rvecs,
                 //                                 tvecs);
                 saveCalibrationVariables(result);

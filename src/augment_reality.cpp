@@ -8,6 +8,7 @@
 
 #include "../include/aruco_utils.h"
 #include "../include/camera_utils.h"
+#include "../include/chessboard_utils.h"
 
 using namespace std;
 
@@ -20,6 +21,7 @@ void printUsage()
          << "Options:\n"
          << "  -a --aruco\t\tCreate new Aruco board \n"
          << "  -v --video\t\tInitiate video stream  \n"
+         << "  -c --chessboard\tDetect and calibrate using chessboard\n"
          << "  -h or --help\t\tShow this help message\n"
          << endl;
 }
@@ -41,6 +43,11 @@ int main(int argc, char *argv[])
         if (strcmp(argv[1], "-a") == 0 || strcmp(argv[1], "--aruco") == 0)
         {
             createArucoBoard();
+        }
+
+        else if (strcmp(argv[1], "-c") == 0 || strcmp(argv[1], "--chessboard") == 0)
+        {
+            return chessboardDetectionAndCalibration();
         }
 
         // Video command is passed
