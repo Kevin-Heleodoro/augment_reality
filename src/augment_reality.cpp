@@ -22,6 +22,7 @@ void printUsage()
          << "  -a --aruco\t\tCreate new Aruco board \n"
          << "  -v --video\t\tInitiate video stream  \n"
          << "  -c --chessboard\tDetect and calibrate using chessboard\n"
+         << "  -hc --harriscorner\tDetect Harris Corners\n"
          << "  -h or --help\t\tShow this help message\n"
          << endl;
 }
@@ -47,7 +48,15 @@ int main(int argc, char *argv[])
 
         else if (strcmp(argv[1], "-c") == 0 || strcmp(argv[1], "--chessboard") == 0)
         {
-            return chessboardDetectionAndCalibration();
+            if (argv[2] != NULL)
+            {
+                std::string calibrationFileName = argv[2];
+                return chessboardDetectionAndCalibration(calibrationFileName);
+            }
+            else
+            {
+                return chessboardDetectionAndCalibration("");
+            }
         }
 
         // Video command is passed

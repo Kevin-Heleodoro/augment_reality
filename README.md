@@ -458,9 +458,29 @@ Rotation Vectors: 7
 Translation Vectors: 7
 ```
 
+[findChessBoardCorners()](https://docs.opencv.org/4.x/d9/d0c/group__calib3d.html#ga93efa9b0aa890de240ca32b11253dd4a)
+
+````xml
+<camera_matrix type_id="opencv-matrix">
+  <rows>3</rows>
+  <cols>3</cols>
+  <dt>f</dt>
+  <data>
+    1.10148401e+03 0. 6.39500000e+02 0. 1.10148401e+03 3.59500000e+02 0.
+    0. 1.</data></camera_matrix>
+<dist_coeffs type_id="opencv-matrix">
+  <rows>5</rows>
+  <cols>1</cols>
+  <dt>f</dt>
+  <data>
+    1.84197560e-01 -2.61509955e-01 0. 0. 0.</data></dist_coeffs>
+```
+
+
 ## Resources
 
 -   [Parsing program options](https://medium.com/@mostsignificant/3-ways-to-parse-command-line-arguments-in-c-quick-do-it-yourself-or-comprehensive-36913284460f)
 -   [OpenCV GitHub Repo](https://github.com/opencv/opencv/tree/4.x/samples)
 -   [OpenCV Aruco github directories](https://github.com/opencv/opencv/tree/4.x/modules/objdetect/src/aruco)
 -   [Youtube video on camera calibration](https://www.youtube.com/watch?v=E5kHUs4npX4&list=PLkmvobsnE0GHMmTF7GTzJnCISue1L9fJn&index=13)
+````
