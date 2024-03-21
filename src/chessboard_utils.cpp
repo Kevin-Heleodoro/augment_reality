@@ -1,3 +1,7 @@
+// Author: Kevin Heleodoro
+// Date: March 18, 2024
+// Purpose: A collection of utils used for Chessboard Detection and Camera Calibration
+
 #include <iostream>
 #include <opencv2/aruco.hpp>
 #include <opencv2/opencv.hpp>
@@ -24,19 +28,22 @@ void generateChessBoardImage()
 {
 }
 
+/**
+ * @brief Loads the calibration file
+ *
+ * @param filename path to the calibration file
+ */
 void loadCalibrationFile(string filename)
 {
     FileStorage fs(filename, FileStorage::READ);
     fs["camera_matrix"] >> camMatrix;
     fs["dist_coeffs"] >> dCoeffs;
-    // fs["rotation_vectors"] >> rotationsVectors;
-    // fs["translation_vectors"] >> translationsVectors;
 
     rotationsVectors.clear();
     FileNode rvecNode = fs["rotation_vectors"];
     for (FileNodeIterator n = rvecNode.begin(); n != rvecNode.end(); ++n)
     {
-        cv::Mat tmp;
+        Mat tmp;
         *n >> tmp;
         rotationsVectors.push_back(tmp);
     }
@@ -45,7 +52,7 @@ void loadCalibrationFile(string filename)
     FileNode tvecNode = fs["translation_vectors"];
     for (FileNodeIterator n = tvecNode.begin(); n != tvecNode.end(); ++n)
     {
-        cv::Mat tmp;
+        Mat tmp;
         *n >> tmp;
         translationsVectors.push_back(tmp);
     }
@@ -61,9 +68,19 @@ void loadCalibrationFile(string filename)
     cout << "Finished loading ...\n" << endl;
 }
 
-void saveCalibrationFile(const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs, double reprojectionError,
-                         const std::vector<cv::Mat> &rvecs, const std::vector<cv::Mat> &tvecs, int frameWidth,
-                         int frameHeight)
+/**
+ * @brief Saves the calibration file
+ *
+ * @param cameraMatrix camera matrix
+ * @param distCoeffs distortion coefficients
+ * @param reprojectionError reprojection error
+ * @param rvecs rotation vectors
+ * @param tvecs translation vectors
+ * @param frameWidth frame width
+ * @param frameHeight frame height
+ */
+void saveCalibrationFile(const Mat &cameraMatrix, const Mat &distCoeffs, double reprojectionError,
+                         const std::vector<Mat> &rvecs, const std::vector<Mat> &tvecs, int frameWidth, int frameHeight)
 {
     FileStorage fs("chessboard_calibration_results.xml", FileStorage::WRITE);
     fs << "frame_width" << frameWidth;
@@ -76,6 +93,11 @@ void saveCalibrationFile(const cv::Mat &cameraMatrix, const cv::Mat &distCoeffs,
     fs.release();
 }
 
+/**
+ * @brief Saves the chessboard image parameters
+ *
+ * @param frame frame to be saved
+ */
 void saveChessBoardImageParameters(Mat frame)
 {
     string filename = "../img/CameraCalibration/" + to_string(++numImages) + "_chessboard_image.jpg";
@@ -92,6 +114,9 @@ void saveChessBoardImageParameters(Mat frame)
     cout << "Number of calibration frames: " << allCalibrationFrames.size() << endl;
 }
 
+/**
+ * @brief Calibrates the camera using the chessboard images
+ */
 double calibrateChessBoardCamera()
 {
     Matx33f cameraMatrix(Matx33f::eye());
@@ -132,6 +157,9 @@ double calibrateChessBoardCamera()
     return rms;
 }
 
+/**
+ * @brief Detects chessboard corners and draws a 3D pyramid on the chessboard
+ */
 void detectChessBoard()
 {
     Mat gray;
@@ -158,8 +186,8 @@ void detectChessBoard()
                 // cout << "objectPoints: " << objectPoints << endl;
                 // cout << "imagePoints: " << imagePoints << endl;
                 solvePnP(objectPoints, imagePoints, camMatrix, dCoeffs, rvec, tvec);
-                // cout << "Rvec: " << rvec << endl;
-                // cout << "Tvec: " << tvec << endl;
+                cout << "Rvec: " << rvec << endl;
+                cout << "Tvec: " << tvec << endl;
                 rotationsVectors.push_back(rvec);
                 translationsVectors.push_back(tvec);
                 drawFrameAxes(chessFrameCopy, camMatrix, dCoeffs, rvec, tvec, 30, 10);
@@ -170,19 +198,7 @@ void detectChessBoard()
                 int bottomRightCorner = chessBoard[0] * chessBoard[1] - 1;
                 vector<int> boardCorners = {topLeftCorner, topRightCorner, bottomLeftCorner, bottomRightCorner};
 
-                // for (int i = 0; i < boardCorners.size(); i++)
-                // {
-                //     int corner = boardCorners[i];
-                //     circle(chessFrameCopy, imagePoints[corner], 5, Scalar(0, 0, 255), 2);
-                //     line(chessFrameCopy, imagePoints[corner], imagePoints[corner] + Point2f(0, -30), Scalar(0, 0,
-                //     255),
-                //          2);
-                //     line(chessFrameCopy, imagePoints[corner], imagePoints[corner] + Point2f(30, 0), Scalar(0, 0,
-                //     255),
-                //          2);
-                // }
-
-                // construct pyramid in 3d world space and project it onto the image
+                // 3D pyramid construction
                 vector<Point3f> pyramidPoints;
                 pyramidPoints.push_back(Point3f(0, 0, 0));     // 0
                 pyramidPoints.push_back(Point3f(0, 100, 0));   // 1
@@ -202,6 +218,7 @@ void detectChessBoard()
                 line(chessFrameCopy, projectedPoints[1], projectedPoints[2], Scalar(0, 0, 255), 2);
                 line(chessFrameCopy, projectedPoints[2], projectedPoints[3], Scalar(0, 0, 255), 2);
                 line(chessFrameCopy, projectedPoints[3], projectedPoints[0], Scalar(0, 0, 255), 2);
+
                 line(chessFrameCopy, projectedPoints[0], projectedPoints[4], Scalar(0, 0, 255), 2);
                 line(chessFrameCopy, projectedPoints[1], projectedPoints[4], Scalar(0, 0, 255), 2);
                 line(chessFrameCopy, projectedPoints[2], projectedPoints[4], Scalar(0, 0, 255), 2);
@@ -223,6 +240,12 @@ void detectChessBoard()
     }
 }
 
+/**
+ * @brief Opens video streaming, detects chessboard corners, and calibrates the camera. Once calibrated, the user can
+ * save the calibration parameters to a file. It will also project a 3D hourglass on the chessboard.
+ *
+ * @param calibrationFile path to the calibration file
+ */
 int chessboardDetectionAndCalibration(string calibrationFile)
 {
     VideoCapture cap(0);
@@ -245,14 +268,14 @@ int chessboardDetectionAndCalibration(string calibrationFile)
         {
             loadCalibrationFile(calibrationFile);
         }
-        catch (const cv::Exception &e)
+        catch (const Exception &e)
         {
             cerr << "Error loading calibration file: " << e.what() << endl;
             return -1;
         }
     }
 
-    cv::namedWindow("Chessboard Detection", WINDOW_AUTOSIZE);
+    namedWindow("Chessboard Detection", WINDOW_AUTOSIZE);
 
     for (int i = 0; i < chessBoard[1]; i++)
     {
@@ -282,7 +305,7 @@ int chessboardDetectionAndCalibration(string calibrationFile)
         {
             cout << "Saving frame..." << endl;
             saveChessBoardImageParameters(chessFrameCopy);
-            cv::waitKey(500);
+            waitKey(500);
         }
         if (key == 'c' || key == 'C')
         {

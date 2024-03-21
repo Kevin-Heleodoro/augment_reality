@@ -1,5 +1,8 @@
 # Augmented Reality
 
+Kevin Heleodoro
+Date: March 1, 2024
+
 ## Task 1
 
 -   [Aruco Marker Detection Tutorial](https://docs.opencv.org/4.x/d5/dae/tutorial_aruco_detection.html)
@@ -475,6 +478,12 @@ Translation Vectors: 7
   <data>
     1.84197560e-01 -2.61509955e-01 0. 0. 0.</data></dist_coeffs>
 ```
+
+
+
+https://docs.opencv.org/4.9.0/d4/d7d/tutorial_harris_detector.html
+
+https://getpython.wordpress.com/2019/07/10/corner-detection-using-harris-corner-in-python-programming/
 
 
 ## Resources

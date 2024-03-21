@@ -9,6 +9,7 @@
 #include "../include/aruco_utils.h"
 #include "../include/camera_utils.h"
 #include "../include/chessboard_utils.h"
+#include "../include/harris_detection.h"
 
 using namespace std;
 
@@ -50,7 +51,7 @@ int main(int argc, char *argv[])
         {
             if (argv[2] != NULL)
             {
-                std::string calibrationFileName = argv[2];
+                string calibrationFileName = argv[2];
                 return chessboardDetectionAndCalibration(calibrationFileName);
             }
             else
@@ -59,12 +60,25 @@ int main(int argc, char *argv[])
             }
         }
 
+        else if (strcmp(argv[1], "-hc") == 0 || strcmp(argv[1], "--harriscorner") == 0)
+        {
+            if (argv[2] != NULL)
+            {
+                string calibrationFileName = argv[2];
+                return startVideoStream(calibrationFileName);
+            }
+            else
+            {
+                return startVideoStream("");
+            }
+        }
+
         // Video command is passed
         else if (strcmp(argv[1], "-v") == 0 || strcmp(argv[1], "--video") == 0)
         {
             if (argc == 3)
             {
-                std::string calibrationFileName = argv[2];
+                string calibrationFileName = argv[2];
                 return videoStreaming(calibrationFileName);
             }
             else

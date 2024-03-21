@@ -8,23 +8,26 @@
 #include "aruco_utils.h"
 #include "camera_utils.h"
 
+using namespace std;
+using namespace cv;
+
 //--------------------- Global Variables ---------------------//
-std::string defaultCalibrationDirectory = "../img/CameraCalibration/";
-cv::aruco::DetectorParameters detectorParams;
-cv::aruco::Dictionary dict;
-cv::Mat cameraMatrix, distCoeffs, frame, frameCopy;
-cv::Size imageSize;
-std::vector<int> markerIds, markerIdsCopy, markerCounterPerFrame;
-// std::vector<int> markerCounterPerFrame;
-std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
-cv::Ptr<cv::aruco::Board> arucoBoard;
+string defaultCalibrationDirectory = "../img/CameraCalibration/";
+aruco::DetectorParameters detectorParams;
+aruco::Dictionary dict;
+Mat cameraMatrix, distCoeffs, frame, frameCopy;
+Size imageSize;
+vector<int> markerIds, markerIdsCopy, markerCounterPerFrame;
+// vector<int> markerCounterPerFrame;
+vector<vector<Point2f>> markerCorners, rejectedCandidates;
+Ptr<aruco::Board> arucoBoard;
 
 // Future Goal: Create a class or struct to store the following variables
-std::vector<cv::Vec3f> point_set;                  // should equal markerCorners // object points
-std::vector<std::vector<cv::Vec3f>> point_list;    // should be the same size as corner_list
-std::vector<std::vector<cv::Point2f>> corner_list; // image points
-std::vector<cv::Mat> calibrationImages;
-std::vector<cv::Mat> tvecs, rvecs;
+vector<Vec3f> point_set;             // should equal markerCorners // object points
+vector<vector<Vec3f>> point_list;    // should be the same size as corner_list
+vector<vector<Point2f>> corner_list; // image points
+vector<Mat> calibrationImages;
+vector<Mat> tvecs, rvecs;
 int numOfCalibrationImages;
 float markerSize, aspectRatio;
 // int markersX = 7;
@@ -37,8 +40,8 @@ int markerLength = 10;
 // int markerLength = 100;
 int markerSeparation = 10;
 // int markerSeparation = 10;
-// cv::Size boardSize = cv::Size(780, 560);
-cv::Size boardSize = cv::Size(560, 780);
+// Size boardSize = Size(780, 560);
+Size boardSize = Size(560, 780);
 bool isCalibrated = false;
 bool areVariablesInitialized = false;
 
@@ -50,15 +53,15 @@ bool areVariablesInitialized = false;
  * This function retrieves the current date and time from the system clock and formats it as a string
  * in the format "YYYY-MM-DD_HH-MM-SS". The formatted string is returned.
  *
- * @return std::string The current date and time as a formatted string.
+ * @return string The current date and time as a formatted string.
  */
-std::string getCurrentDateTimeStamp()
+string getCurrentDateTimeStamp()
 {
-    auto now = std::chrono::system_clock::now();
-    std::time_t currentTime = std::chrono::system_clock::to_time_t(now);
+    auto now = chrono::system_clock::now();
+    time_t currentTime = chrono::system_clock::to_time_t(now);
 
-    std::stringstream ss;
-    ss << std::put_time(std::localtime(&currentTime), "%Y-%m-%d_%H-%M-%S");
+    stringstream ss;
+    ss << put_time(localtime(&currentTime), "%Y-%m-%d_%H-%M-%S");
 
     return ss.str();
 }
@@ -71,27 +74,29 @@ std::string getCurrentDateTimeStamp()
  */
 void createArucoMarker(int markerId)
 {
-    std::cout << "Creating new Aruco marker..." << std::endl;
-    cv::Mat markerImage;
-    cv::aruco::Dictionary arucoDict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cout << "Creating new Aruco marker..." << endl;
+    Mat markerImage;
+    aruco::Dictionary arucoDict = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
     int markerSize = 200;
     int borderBits = 1;
-    cv::aruco::generateImageMarker(arucoDict, markerId, markerSize, markerImage, borderBits);
-    std::string filename = "aruco_marker_" + std::to_string(markerId) + ".png";
-    cv::imwrite(filename, markerImage);
+    aruco::generateImageMarker(arucoDict, markerId, markerSize, markerImage, borderBits);
+    string filename = "aruco_marker_" + to_string(markerId) + ".png";
+    imwrite(filename, markerImage);
 }
 
+/**
+ * @brief Creates a new Aruco board and saves it to a file
+ */
 void createArucoBoard()
 {
-    std::cout << "Creating new Aruco board..." << std::endl;
-    dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::Mat boardImage;
-    cv::aruco::GridBoard board =
-        cv::aruco::GridBoard(cv::Size(markersX, markersY), markerLength, markerSeparation, dict);
-    std::string filename = "aruco_board_" + getCurrentDateTimeStamp() + ".png";
+    cout << "Creating new Aruco board..." << endl;
+    dict = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    Mat boardImage;
+    aruco::GridBoard board = aruco::GridBoard(Size(markersX, markersY), markerLength, markerSeparation, dict);
+    string filename = "aruco_board_" + getCurrentDateTimeStamp() + ".png";
     board.generateImage(boardSize, boardImage, margins, borderBits);
-    cv::imwrite(filename, boardImage);
-    std::cout << "Aruco board created and saved to " << filename << std::endl;
+    imwrite(filename, boardImage);
+    cout << "Aruco board created and saved to " << filename << endl;
 }
 
 /**
@@ -101,51 +106,53 @@ void createArucoBoard()
  * @param estimatePose Flag to estimate the pose of the markers
  * @return void
  */
-void detectAndDrawMarkers(cv::Mat &src, bool estimatePose = false, bool showRejected = false)
+void detectAndDrawMarkers(Mat &src, bool estimatePose = false, bool showRejected = false)
 {
-    cv::aruco::GridBoard board =
-        cv::aruco::GridBoard(cv::Size(markersX, markersY), markerLength, markerSeparation, dict);
+    aruco::GridBoard board = aruco::GridBoard(Size(markersX, markersY), markerLength, markerSeparation, dict);
 
-    arucoBoard = cv::makePtr<cv::aruco::Board>(board);
-    // std::cout << "Aruco Board: " << board << std::endl;
-    // std::cout << "Marker Size: " << board.getMarkerLength() << std::endl;
-    // std::cout << "Marker Separation: " << board.getMarkerSeparation() << std::endl;
-    // std::cout << "Number of markers: " << board.getGridSize().area() << std::endl;
-    // std::cout << "Board Size: " << board.getObjPoints() << std::endl;
+    arucoBoard = makePtr<aruco::Board>(board);
+    // cout << "Aruco Board: " << board << endl;
+    // cout << "Marker Size: " << board.getMarkerLength() << endl;
+    // cout << "Marker Separation: " << board.getMarkerSeparation() << endl;
+    // cout << "Number of markers: " << board.getGridSize().area() << endl;
+    // cout << "Board Size: " << board.getObjPoints() << endl;
 
-    cv::aruco::ArucoDetector detector(dict, detectorParams);
+    aruco::ArucoDetector detector(dict, detectorParams);
     detector.detectMarkers(src, markerCorners, markerIds, rejectedCandidates);
 
     int markersDetected = 0;
     // if (!markerIds.empty())
     // {
-    //     cv::Mat objPoints, imgPoints;
+    //     Mat objPoints, imgPoints;
     //     board.matchImagePoints(markerCorners, markerIds, objPoints, imgPoints);
-    //     cv::solvePnP(objPoints, imgPoints, cameraMatrix, distCoeffs, rvecs, tvecs);
+    //     solvePnP(objPoints, imgPoints, cameraMatrix, distCoeffs, rvecs, tvecs);
     //     markersDetected = (int)objPoints.total() / 4;
-    //     cv::aruco::estimatePoseSingleMarkers(markerCorners, markerLength, cameraMatrix, distCoeffs, rvecs, tvecs);
+    //     aruco::estimatePoseSingleMarkers(markerCorners, markerLength, cameraMatrix, distCoeffs, rvecs, tvecs);
     //     // for (int i = 0; i < markerIds.size(); i++)
     //     // {
-    //     //     cv::aruco::drawAxis(src, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 0.5f);
+    //     //     aruco::drawAxis(src, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], markerLength * 0.5f);
     //     // }
     // }
 
     if (markerIds.size() > 0)
     {
-        cv::aruco::drawDetectedMarkers(src, markerCorners, markerIds);
+        aruco::drawDetectedMarkers(src, markerCorners, markerIds);
     }
 
     if (showRejected && !rejectedCandidates.empty())
     {
-        cv::aruco::drawDetectedMarkers(src, rejectedCandidates, cv::noArray(), cv::Scalar(100, 0, 255));
+        aruco::drawDetectedMarkers(src, rejectedCandidates, noArray(), Scalar(100, 0, 255));
     }
 
     // if (estimatePose)
     // {
-    //     cv::drawFrameAxes(src, cameraMatrix, distCoeffs, rvecs, tvecs, markerLength * 0.5f);
+    //     drawFrameAxes(src, cameraMatrix, distCoeffs, rvecs, tvecs, markerLength * 0.5f);
     // }
 }
 
+/**
+ * @brief Prints the calibration variables to the console
+ */
 void printCalibrationVariables()
 {
     // Iterating over corner_list and comparing each corner to the point_set
@@ -153,16 +160,21 @@ void printCalibrationVariables()
     {
         for (size_t j = 0; j < corner_list[i].size(); j++)
         {
-            std::cout << "Corner " << i + 1 << ": " << corner_list[i][j] << std::endl;
-            std::cout << "Point " << i + 1 << ": " << point_set[j] << std::endl;
+            cout << "Corner " << i + 1 << ": " << corner_list[i][j] << endl;
+            cout << "Point " << i + 1 << ": " << point_set[j] << endl;
         }
     }
 }
 
+/**
+ * @brief Saves the calibration variables to a file
+ *
+ * @param reprojectionError The reprojection error
+ */
 void saveCalibrationVariables(double reprojectionError = 0.0)
 {
-    std::string filename = "calibration_variables_" + getCurrentDateTimeStamp() + ".xml";
-    cv::FileStorage fs(filename, cv::FileStorage::WRITE);
+    string filename = "calibration_variables_" + getCurrentDateTimeStamp() + ".xml";
+    FileStorage fs(filename, FileStorage::WRITE);
     fs << "frame_width" << frame.cols;
     fs << "frame_height" << frame.rows;
     fs << "aspect_ratio" << aspectRatio;
@@ -182,63 +194,61 @@ void saveCalibrationVariables(double reprojectionError = 0.0)
  * @param calibrationDirectory The directory to save the calibration images
  * @return void
  */
-void saveCalibrationImage(cv::Mat &src, std::string calibrationDirectory = defaultCalibrationDirectory)
+void saveCalibrationImage(Mat &src, string calibrationDirectory = defaultCalibrationDirectory)
 {
     // TODO: Add some error handling for the directory and validation for the image
 
-    std::cout << "Marker Corners vs point_set: " << std::endl;
-    std::cout << "Marker Corners: " << markerCorners.size() << std::endl;
-    std::cout << "Point Set: " << point_set.size() << std::endl;
+    cout << "Marker Corners vs point_set: " << endl;
+    cout << "Marker Corners: " << markerCorners.size() << endl;
+    cout << "Point Set: " << point_set.size() << endl;
 
-    std::vector<cv::Point2f> corners;
+    vector<Point2f> corners;
 
     for (size_t i = 0; i < markerCorners.size(); i++)
     {
         for (size_t j = 0; j < markerCorners[i].size(); j++)
         {
-            cv::Point2f point(markerCorners[i][j].x, markerCorners[i][j].y);
+            Point2f point(markerCorners[i][j].x, markerCorners[i][j].y);
             corners.push_back(point);
             // corners.push_back(markerCorners[i][j]);
-            // std::cout << "Marker ID: " << markerIds[i] << std::endl;
-            // std::cout << "Marker Corner: " << markerCorners[i][j] << std::endl;
-            // std::cout << "Corner: " << point << std::endl;
+            // cout << "Marker ID: " << markerIds[i] << endl;
+            // cout << "Marker Corner: " << markerCorners[i][j] << endl;
+            // cout << "Corner: " << point << endl;
         }
     }
 
     if (corners.size() != point_set.size())
     {
-        std::cerr << "\n===========\nError: The number of corners and points do not match\n===========\n" << std::endl;
+        cerr << "\n===========\nError: The number of corners and points do not match\n===========\n" << endl;
         return;
     }
 
     corner_list.push_back(corners);
-    // cv::aruco::GridBoard board =
-    //     cv::aruco::GridBoard(cv::Size(markersX, markersY), markerLength, markerSeparation, dict);
-    // std::cout << "Object Points: " << board.getObjPoints()[0] << std::endl;
+    // aruco::GridBoard board =
+    //     aruco::GridBoard(Size(markersX, markersY), markerLength, markerSeparation, dict);
+    // cout << "Object Points: " << board.getObjPoints()[0] << endl;
     point_list.push_back(point_set);
     markerCounterPerFrame.push_back((int)markerIds.size());
     markerIdsCopy = markerIds;
 
-    std::string filename = calibrationDirectory + std::to_string(numOfCalibrationImages) + "_calibration_image.png";
-    cv::imwrite(filename, src);
+    string filename = calibrationDirectory + to_string(numOfCalibrationImages) + "_calibration_image.png";
+    imwrite(filename, src);
     numOfCalibrationImages++;
-    std::cout << "Calibration image saved" << std::endl;
+    cout << "Calibration image saved" << endl;
     calibrationImages.push_back(src);
 
-    std::cout << "Number of calibration images: " << numOfCalibrationImages << std::endl;
-    std::cout << "Number of corner sets: " << corner_list.size() << std::endl;
-    std::cout << "Number of corners in last set: " << corner_list[corner_list.size() - 1].size() << std::endl;
-    std::cout << "Number of points: " << point_list.size() << std::endl;
-    std::cout << "Number of points in last set: " << point_list[point_list.size() - 1].size() << std::endl;
-    std::cout << "Number of marker ids: " << markerIds.size() << std::endl;
-    std::cout << "Number of marker ids in last set: " << markerCounterPerFrame[markerCounterPerFrame.size() - 1]
-              << std::endl;
-    std::cout << "Number of marker corners: " << markerCorners.size() << std::endl;
-    std::cout << "Number of marker corners in last set: " << markerCorners[markerCorners.size() - 1].size()
-              << std::endl;
-    std::cout << "Number of rejected candidates: " << rejectedCandidates.size() << std::endl;
+    cout << "Number of calibration images: " << numOfCalibrationImages << endl;
+    cout << "Number of corner sets: " << corner_list.size() << endl;
+    cout << "Number of corners in last set: " << corner_list[corner_list.size() - 1].size() << endl;
+    cout << "Number of points: " << point_list.size() << endl;
+    cout << "Number of points in last set: " << point_list[point_list.size() - 1].size() << endl;
+    cout << "Number of marker ids: " << markerIds.size() << endl;
+    cout << "Number of marker ids in last set: " << markerCounterPerFrame[markerCounterPerFrame.size() - 1] << endl;
+    cout << "Number of marker corners: " << markerCorners.size() << endl;
+    cout << "Number of marker corners in last set: " << markerCorners[markerCorners.size() - 1].size() << endl;
+    cout << "Number of rejected candidates: " << rejectedCandidates.size() << endl;
 
-    std::cout << "\n" << std::endl;
+    cout << "\n" << endl;
 
     // printCalibrationVariables();
 }
@@ -250,19 +260,19 @@ void saveCalibrationImage(cv::Mat &src, std::string calibrationDirectory = defau
  */
 void initializeVariables()
 {
-    std::cout << "Initializing variables..." << std::endl;
+    cout << "Initializing variables..." << endl;
     numOfCalibrationImages = 0;
-    dict = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    detectorParams = cv::aruco::DetectorParameters();
+    dict = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    detectorParams = aruco::DetectorParameters();
     aspectRatio = 1;
     double focalLength = frame.cols;
-    std::cout << "Focal Length: " << focalLength << std::endl;
-    std::cout << "Frame width: " << frame.cols << std::endl;
-    std::cout << "Frame height: " << frame.rows << std::endl;
-    std::cout << "Aspect Ratio: " << aspectRatio << std::endl;
+    cout << "Focal Length: " << focalLength << endl;
+    cout << "Frame width: " << frame.cols << endl;
+    cout << "Frame height: " << frame.rows << endl;
+    cout << "Aspect Ratio: " << aspectRatio << endl;
 
-    distCoeffs = cv::Mat::zeros(5, 1, CV_64F);
-    // distCoeffs = cv::Mat::zeros(8, 1, CV_64F);
+    distCoeffs = Mat::zeros(5, 1, CV_64F);
+    // distCoeffs = Mat::zeros(8, 1, CV_64F);
 
     /**
      * @brief The camera matrix is a 3x3 matrix that represents the intrinsic parameters of the camera. Initialized to
@@ -270,7 +280,7 @@ void initializeVariables()
      * [0, 1, frame.rows/2]
      * [0, 0, 1           ]
      */
-    cameraMatrix = cv::Mat::eye(3, 3, CV_64FC1);
+    cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     // cameraMatrix.at<double>(0, 0) = focalLength * aspectRatio;
     cameraMatrix.at<double>(0, 0) = 1;
     cameraMatrix.at<double>(0, 1) = 0;
@@ -293,30 +303,35 @@ void initializeVariables()
         {
             x = j * (markerLength + markerSeparation);
             y = i * (markerLength + markerSeparation);
-            point_set.push_back(cv::Vec3f(y, x, 0));
-            point_set.push_back(cv::Vec3f(y + markerLength, x, 0));
-            point_set.push_back(cv::Vec3f(y + markerLength, x + markerLength, 0));
-            point_set.push_back(cv::Vec3f(y, x + markerLength, 0));
-            // point_set.push_back(cv::Vec3f(x, y, 0));
-            // point_set.push_back(cv::Vec3f(x + markerLength, y, 0));
-            // point_set.push_back(cv::Vec3f(x + markerLength, y + markerLength, 0));
-            // point_set.push_back(cv::Vec3f(x, y + markerLength, 0));
+            point_set.push_back(Vec3f(y, x, 0));
+            point_set.push_back(Vec3f(y + markerLength, x, 0));
+            point_set.push_back(Vec3f(y + markerLength, x + markerLength, 0));
+            point_set.push_back(Vec3f(y, x + markerLength, 0));
+            // point_set.push_back(Vec3f(x, y, 0));
+            // point_set.push_back(Vec3f(x + markerLength, y, 0));
+            // point_set.push_back(Vec3f(x + markerLength, y + markerLength, 0));
+            // point_set.push_back(Vec3f(x, y + markerLength, 0));
         }
     }
 
-    std::cout << "Point Set Size: " << point_set.size() << std::endl;
-    std::cout << "Camera Matrix" << cameraMatrix << std::endl;
+    cout << "Point Set Size: " << point_set.size() << endl;
+    cout << "Camera Matrix" << cameraMatrix << endl;
 
     areVariablesInitialized = true;
-    std::cout << "Variables initialized! \n" << std::endl;
+    cout << "Variables initialized! \n" << endl;
 }
 
-int videoStreaming(std::string cameraCalibrationFile)
+/**
+ * @brief Starts the video stream and applies the Aruco marker detection algorithm
+ *
+ * @param cameraCalibrationFile The file containing the camera calibration parameters
+ */
+int videoStreaming(string cameraCalibrationFile)
 {
-    cv::VideoCapture cap(0);
+    VideoCapture cap(0);
     if (!cap.isOpened())
     {
-        std::cerr << "Error opening video stream" << std::endl;
+        cerr << "Error opening video stream" << endl;
         return -1;
     }
 
@@ -326,24 +341,24 @@ int videoStreaming(std::string cameraCalibrationFile)
         isCalibrated = true;
     }
 
-    std::cout << "\nWelcome to the Augmented Reality Application\n" << std::endl;
-    std::cout << "Press 'q' to quit the program" << std::endl;
-    std::cout << "Press 's' to save a calibration image" << std::endl;
-    std::cout << "Press 'c' to calibrate the camera" << std::endl;
-    std::cout << "\n" << std::endl;
+    cout << "\nWelcome to the Augmented Reality Application\n" << endl;
+    cout << "Press 'q' to quit the program" << endl;
+    cout << "Press 's' to save a calibration image" << endl;
+    cout << "Press 'c' to calibrate the camera" << endl;
+    cout << "\n" << endl;
 
     // calibrationDirectory = calibrationDirectory == "" ? defaultCalibrationDirectory : calibrationDirectory;
-    cv::namedWindow("Video Stream", cv::WINDOW_AUTOSIZE);
+    namedWindow("Video Stream", WINDOW_AUTOSIZE);
 
-    std::cout << "Initial Camera Matrix: " << cameraMatrix << std::endl;
+    cout << "Initial Camera Matrix: " << cameraMatrix << endl;
 
     while (true)
     {
-        // cv::Mat frame, frameCopy;
+        // Mat frame, frameCopy;
         cap >> frame;
         if (frame.empty())
         {
-            std::cerr << "Error: Could not capture frame" << std::endl;
+            cerr << "Error: Could not capture frame" << endl;
             break;
         }
         if (!areVariablesInitialized)
@@ -352,37 +367,37 @@ int videoStreaming(std::string cameraCalibrationFile)
         }
 
         // flip image vertically
-        // cv::flip(frame, frame, 1);
+        // flip(frame, frame, 1);
 
         frame.copyTo(frameCopy);
         imageSize = frame.size();
         detectAndDrawMarkers(frameCopy);
 
         // display number of markers detected in window
-        cv::putText(frameCopy, "Number of markers detected: " + std::to_string(markerIds.size()), cv::Point(10, 30),
-                    cv::FONT_HERSHEY_SIMPLEX, .75, cv::Scalar(0, 0, 255), 2);
+        putText(frameCopy, "Number of markers detected: " + to_string(markerIds.size()), Point(10, 30),
+                FONT_HERSHEY_SIMPLEX, .75, Scalar(0, 0, 255), 2);
 
-        cv::imshow("Video Stream", frameCopy);
+        imshow("Video Stream", frameCopy);
 
-        char key = cv::waitKey(10);
+        char key = waitKey(10);
         if (key == 'q' || key == 'Q')
         {
-            std::cout << "User terminated program" << std::endl;
+            cout << "User terminated program" << endl;
             break;
         }
         if (key == 's' || key == 'S')
         {
-            std::cout << "Saving frame" << std::endl;
+            cout << "Saving frame" << endl;
             saveCalibrationImage(frameCopy, defaultCalibrationDirectory);
-            cv::waitKey(500);
+            waitKey(500);
         }
         if (key == 'c' || key == 'C')
         {
-            std::cout << "Calibrating camera" << std::endl;
+            cout << "Calibrating camera" << endl;
             if (numOfCalibrationImages >= 5)
             {
                 // TODO: Make sure that this calibration call allows the video loop to continue
-                std::cout << "User began calibration" << std::endl;
+                cout << "User began calibration" << endl;
                 arucoBoard->matchImagePoints(markerCorners, markerIds, point_set, corner_list);
                 // double result = calibrateCamera(cameraMatrix, distCoeffs, boardSize, point_list, corner_list);
                 double result = calibrateCamera(cameraMatrix, distCoeffs, imageSize, point_list, corner_list, rvecs,
@@ -393,17 +408,17 @@ int videoStreaming(std::string cameraCalibrationFile)
 
                 if (result > 0)
                 {
-                    std::cout << "Camera calibration successful" << std::endl;
+                    cout << "Camera calibration successful" << endl;
                     isCalibrated = true;
                 }
                 else
                 {
-                    std::cout << "Camera calibration failed" << std::endl;
+                    cout << "Camera calibration failed" << endl;
                 }
             }
             else
             {
-                std::cout << "Need at least 5 calibration images" << std::endl;
+                cout << "Need at least 5 calibration images" << endl;
             }
             continue;
         }
